@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
@@ -157,6 +157,7 @@ export const generatePDFForOperateur = async (op, shouldSave = true) => {
 };
 
 export default function OperateurList() {
+    const navigate = useNavigate();
     const [operateurs, setOperateurs] = useState([]);
     const [loading, setLoading] = useState(true);
 

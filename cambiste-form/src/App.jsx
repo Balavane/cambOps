@@ -403,7 +403,7 @@ export default function App({ view = "form" }) {
                                     <p className="text-white-50 mb-0 small">Gérez et exportez les fiches d'identification</p>
                                 </div>
                             </div>
-                            <button className="btn btn-light rounded-pill shadow-sm d-flex align-items-center gap-2" onClick={() => navigate('/nouvelle_fiche')}>
+                            <button className="btn btn-light rounded-pill shadow-sm d-flex align-items-center gap-2" onClick={() => navigate('/nouveau_cambiste')}>
                                 <UserPlus size={18} />
                                 Nouveau Cambiste
                             </button>
