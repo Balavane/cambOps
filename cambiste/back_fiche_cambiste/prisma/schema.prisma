@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model FicheCambiste {
+  id                        Int       @id @default(autoincrement())
+  dateEnregistrement        DateTime  @default(now())
+  photoIDPath               String?
+  nomPrenom                 String
+  sexe                      String
+  lieuNaissance             String?
+  dateNaissance             DateTime?
+  nationalite               String?
+  documentIdentite          String?
+  adresse                   String?
+  telephone                 String
+  email                     String?
+  associationNom            String?
+  associationNumero         String?
+  associationResponsable    String?
+  associationContact        String?
+  garantieNature            String?
+  changeManuel              Boolean   @default(false)
+  airtelMoney               Boolean   @default(false)
+  mPesa                     Boolean   @default(false)
+  orangeMoney               Boolean   @default(false)
+  afrimoney                 Boolean   @default(false)
+  venteTelecom              Boolean   @default(false)
+  autresActivites           String?
+  lieuActivite              String?
+  anciennete                String?
+  volume                    String?
+  sources                   String?
+  soussigne                 String?
+  nomAssociationAtteste     String?
+  nomResponsableAssociation String?
+  lieuFait                  String?
+  dateEngagement            DateTime?
+  numEnregistrement         String?
+  agentNom                  String?
+  dateAutorite              DateTime?
+}
+
+model FicheOperateur {
+  id                        Int       @id @default(autoincrement())
+  dateEnregistrement        DateTime  @default(now())
+  photoPath                 String?
+  statut                    String?
+  monnaieInternationale     Boolean   @default(false)
+  nomPrenom                 String
+  sexe                      String
+  dateNaissance             DateTime?
+  lieuNaissance             String?
+  nationalite               String?
+  documentIdentite          String?
+  adresse                   String?
+  telephone                 String
+  email                     String?
+  nomEtablissement          String?
+  airtelMoney               Boolean   @default(false)
+  mPesa                     Boolean   @default(false)
+  orangeMoney               Boolean   @default(false)
+  afrimoney                 Boolean   @default(false)
+  venteTelecom              Boolean   @default(false)
+  numAgent                  String?
+  numEnregistrement         String?
+  agentNom                  String?
+  dateAutorite              DateTime?
+}
