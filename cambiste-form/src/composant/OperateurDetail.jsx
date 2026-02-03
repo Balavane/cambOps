@@ -20,6 +20,7 @@ import {
     Save,
     X
 } from 'lucide-react';
+import { showAlert, showToast, askConfirmation } from '../utils/ui';
 import { generatePDFForOperateur } from './OperateurList';
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api';
@@ -70,18 +71,22 @@ export default function OperateurDetail() {
             const updatedOp = await response.json();
             setOp(updatedOp);
             setIsEditing(false);
-            alert("Mise à jour de l'opérateur réussie !");
-            window.location.reload();
+            showToast('success', "Mise à jour de l'opérateur réussie !");
+            setTimeout(() => window.location.reload(), 1500);
         } catch (error) {
             console.error(error);
-            alert(error.message);
+            showAlert('error', 'Erreur Mise à jour', error.message);
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleDelete = async () => {
-        if (!window.confirm("Supprimer définitivement cet opérateur ?")) return;
+        const confirmed = await askConfirmation(
+            "Supprimer cet opérateur ?",
+            "Cette action est irréversible."
+        );
+        if (!confirmed) return;
         setIsDeleting(true);
         try {
             const response = await fetch(`${API_BASE_URL}/operateurs/${operateurId}`, {

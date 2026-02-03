@@ -135,25 +135,7 @@ export const generatePDFForOperateur = async (op, shouldSave = true) => {
         if (shouldSave) {
             // 1. Sauvegarde PDF
             pdf.save(`Fiche_Operateur_${op.nomPrenom.replace(/\s+/g, '_')}.pdf`);
-
-            // 2. TÉLÉCHARGEMENT SÉPARÉ DE LA PHOTO
-            if (op.photoPath) {
-                const photoSrc = op.photoPath.startsWith('uploads/') ? op.photoPath : 'uploads/' + op.photoPath;
-                const photoUrl = `${UPLOADS_BASE_URL}${photoSrc}`;
-                const safeName = op.nomPrenom
-                    ? op.nomPrenom.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')
-                    : 'Photo_Operateur';
-
-                const link = document.createElement('a');
-                link.href = photoUrl;
-                link.download = `Photo_${safeName}${op.photoPath.lastIndexOf('.') !== -1
-                    ? op.photoPath.substring(op.photoPath.lastIndexOf('.'))
-                    : '.jpg'
-                    }`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
+            // Suppression du téléchargement automatique de la photo séparée
         } else {
             return pdf.output('arraybuffer');
         }
@@ -181,13 +163,25 @@ export default function OperateurList() {
 
     useEffect(() => {
         fetch('http://127.0.0.1:5000/api/operateurs')
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error("Erreur réseau");
+                return res.json();
+            })
             .then(data => {
-                data.sort((a, b) => new Date(b.dateEnregistrement) - new Date(a.dateEnregistrement));
-                setOperateurs(data);
+                if (Array.isArray(data)) {
+                    data.sort((a, b) => new Date(b.dateEnregistrement) - new Date(a.dateEnregistrement));
+                    setOperateurs(data);
+                } else {
+                    console.error("Données invalides reçues:", data);
+                    setOperateurs([]);
+                }
                 setLoading(false);
             })
-            .catch(err => console.error(err));
+            .catch(err => {
+                console.error(err);
+                setLoading(false);
+                setOperateurs([]);
+            });
     }, []);
 
     // LOGIQUE DE FILTRAGE CUMULATIVE

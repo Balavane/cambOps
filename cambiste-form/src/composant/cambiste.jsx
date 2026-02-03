@@ -22,6 +22,7 @@ import {
     Save,
     X
 } from 'lucide-react';
+import { showAlert, showToast, askConfirmation } from '../utils/ui';
 
 // URL de base pour servir les images et l'API
 const UPLOADS_BASE_URL = 'http://127.0.0.1:5000/';
@@ -171,22 +172,7 @@ export const generatePDFForFiche = async (fiche, shouldSave = true) => {
 
         if (shouldSave) {
             pdf.save(filename);
-
-            // TÉLÉCHARGEMENT AUTOMATIQUE DE LA PHOTO SÉPARÉE
-            if (fiche.photoIDPath) {
-                const photoSrc = fiche.photoIDPath.startsWith('uploads/') ? fiche.photoIDPath : 'uploads/' + fiche.photoIDPath;
-                const photoUrl = `${UPLOADS_BASE_URL}${photoSrc}`;
-                const safeName = fiche.nomPrenom ? fiche.nomPrenom.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_') : 'Cambiste';
-
-                const link = document.createElement('a');
-                link.href = photoUrl;
-                link.download = `Photo-${safeName}${fiche.photoIDPath.lastIndexOf('.') !== -1
-                    ? fiche.photoIDPath.substring(fiche.photoIDPath.lastIndexOf('.'))
-                    : '.jpg'}`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
+            // La photo n'est plus téléchargée séparément pour éviter de sortir de la page
         } else {
             return pdf.output('arraybuffer');
         }
@@ -226,7 +212,35 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
 
     // --- Logique de Suppression de la Fiche (inchangée) ---
     const handleDelete = async () => {
-        // ... (Code inchangé)
+        const confirmed = await askConfirmation(
+            "Êtes-vous sûr ?",
+            "Cette action est irréversible. La fiche sera définitivement supprimée."
+        );
+        if (!confirmed) return;
+
+        setIsDeleting(true);
+        try {
+            const id = fiche._id || fiche.id;
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                if (onFicheDeleted) {
+                    onFicheDeleted(id);
+                } else {
+                    await showToast('success', 'Fiche supprimée avec succès');
+                    window.location.href = '/liste_cambiste';
+                }
+            } else {
+                throw new Error("Erreur lors de la suppression");
+            }
+        } catch (error) {
+            console.error(error);
+            showAlert('error', 'Erreur', "Une erreur est survenue lors de la suppression.");
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
 
@@ -237,7 +251,7 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
             await generatePDFForFiche(fiche, true);
         } catch (error) {
             console.error(error);
-            alert(error.message);
+            showAlert('error', 'Erreur PDF', error.message);
         } finally {
             setIsDownloading(false);
         }
@@ -252,7 +266,7 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
             window.open(url, '_blank');
         } catch (error) {
             console.error(error);
-            alert(error.message);
+            showAlert('error', 'Erreur Aperçu', error.message);
         } finally {
             setIsPreviewing(false);
         }
@@ -272,13 +286,11 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
 
             const updatedFiche = await response.json();
             setIsEditing(false);
-            alert("Mise à jour réussie !");
-            // Note: In a real app, you might want to call a prop function here to update the parent state
-            // For now, reload or local update
-            window.location.reload();
+            showToast('success', 'Mise à jour réussie !');
+            setTimeout(() => window.location.reload(), 1500);
         } catch (error) {
             console.error(error);
-            alert(error.message);
+            showAlert('error', 'Erreur Sauvegarde', error.message);
         } finally {
             setIsSaving(false);
         }
