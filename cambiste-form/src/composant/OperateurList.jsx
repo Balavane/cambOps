@@ -4,6 +4,14 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import {
+    Download,
+    Eye,
+    Home,
+    UserPlus,
+    Search,
+    Filter
+} from 'lucide-react';
 
 const UPLOADS_BASE_URL = 'http://127.0.0.1:5000/';
 const primaryColor = '#ea580c';
@@ -164,7 +172,8 @@ export default function OperateurList() {
     // ÉTATS DES FILTRES
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatut, setFilterStatut] = useState('all');
-    const [filterMonnaieInternationale, setFilterMonnaieInternationale] = useState(false); // Le nouveau filtre Change
+    const [filterDate, setFilterDate] = useState('');
+    const [filterMonnaieInternationale, setFilterMonnaieInternationale] = useState(false);
 
     const [isBatchDownloading, setIsBatchDownloading] = useState(false);
     const [selectedBatchIndex, setSelectedBatchIndex] = useState(0);
@@ -185,10 +194,14 @@ export default function OperateurList() {
     const filteredOperateurs = operateurs.filter(op => {
         const matchSearch = !searchTerm || op.nomPrenom?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchStatut = filterStatut === 'all' || op.statut === filterStatut;
-        // Si le switch est activé, on ne garde que ceux qui font la monnaie étrangère
+
+        // Filtre par date
+        const opDate = op.dateEnregistrement ? String(op.dateEnregistrement).split('T')[0] : '';
+        const matchDate = !filterDate || opDate === filterDate;
+
         const matchMonnaie = !filterMonnaieInternationale || op.monnaieInternationale === true;
 
-        return matchSearch && matchStatut && matchMonnaie;
+        return matchSearch && matchStatut && matchDate && matchMonnaie;
     });
 
     const totalFiltered = filteredOperateurs.length;
@@ -253,11 +266,11 @@ export default function OperateurList() {
                                 <p className="text-muted small mb-0">{operateurs.length} enregistrements filtrés</p>
                             </div>
                             <div className="d-flex gap-3">
-                                <button className="btn btn-light rounded-pill d-flex align-items-center shadow-sm" onClick={() => navigate('/')}>
-                                    🏠 Dashboard
+                                <button className="btn btn-light rounded-pill d-flex align-items-center gap-2 shadow-sm" onClick={() => navigate('/')}>
+                                    <Home size={18} /> Dashboard
                                 </button>
-                                <button className="btn btn-primary rounded-pill d-flex align-items-center" onClick={() => navigate('/enregistrement_operateur')}>
-                                    + Nouvel Opérateur
+                                <button className="btn btn-primary rounded-pill d-flex align-items-center gap-2" onClick={() => navigate('/enregistrement_operateur')}>
+                                    <UserPlus size={18} /> Nouvel Opérateur
                                 </button>
                             </div>
                         </div>
@@ -267,19 +280,27 @@ export default function OperateurList() {
                     <div className="card-body bg-light border-top p-4">
                         <div className="row g-3 align-items-end">
                             <div className="col-md-3">
-                                <label className="form-label small fw-bold text-muted uppercase">Recherche</label>
-                                <input type="text" className="form-control border-0 shadow-sm rounded-pill px-3" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Nom de l'opérateur..." />
+                                <label className="form-label small fw-bold text-muted uppercase">
+                                    <Search size={14} className="me-1" /> Recherche
+                                </label>
+                                <input type="text" className="form-control border-0 bg-light rounded-pill px-3" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Nom de l'opérateur..." />
                             </div>
-                            <div className="col-md-3">
+                            <div className="col-md-2">
+                                <label className="form-label small fw-bold text-muted uppercase">
+                                    <Filter size={14} className="me-1" /> Date
+                                </label>
+                                <input type="date" className="form-control border-0 bg-light rounded-pill px-3" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+                            </div>
+                            <div className="col-md-2">
                                 <label className="form-label small fw-bold text-muted uppercase">Statut</label>
                                 <select className="form-select border-0 shadow-sm rounded-pill px-3" value={filterStatut} onChange={(e) => setFilterStatut(e.target.value)}>
-                                    <option value="all">Tous les statuts</option>
+                                    <option value="all">Tous</option>
                                     <option value="Shop">Shop</option>
                                     <option value="Grande cabine">Grande cabine</option>
                                     <option value="Petite cabine">Petite cabine</option>
                                 </select>
                             </div>
-                            <div className="col-md-2">
+                            <div className="col-md-1">
                                 <div className="form-check form-switch pb-2">
                                     <input className="form-check-input" type="checkbox" id="filterMonnaie" checked={filterMonnaieInternationale} onChange={(e) => setFilterMonnaieInternationale(e.target.checked)} />
                                     <label className="form-check-label fw-bold small text-muted" htmlFor="filterMonnaie">CHANGE</label>
@@ -349,9 +370,22 @@ export default function OperateurList() {
                                             </div>
                                         </td>
                                         <td className="px-4 text-center">
-                                            <button onClick={() => generatePDFForOperateur(op)} className="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm">
-                                                Exporter PDF
-                                            </button>
+                                            <div className="d-flex gap-2 justify-content-center">
+                                                <button onClick={() => navigate(`/operateur/${op.id || op._id}`)} className="btn btn-sm btn-primary rounded-pill px-3 shadow-sm border-0" style={{ background: 'var(--primary)' }}>
+                                                    Consulter
+                                                </button>
+                                                <button onClick={async () => {
+                                                    const buffer = await generatePDFForOperateur(op, false);
+                                                    const blob = new Blob([buffer], { type: 'application/pdf' });
+                                                    const url = URL.createObjectURL(blob);
+                                                    window.open(url, '_blank');
+                                                }} className="btn btn-sm btn-outline-info rounded-pill px-2 shadow-sm" title="Aperçu PDF">
+                                                    <Eye size={16} />
+                                                </button>
+                                                <button onClick={() => generatePDFForOperateur(op)} className="btn btn-sm btn-outline-secondary rounded-pill px-2 shadow-sm" title="Télécharger PDF">
+                                                    <Download size={16} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

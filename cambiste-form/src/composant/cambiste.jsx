@@ -12,7 +12,8 @@ import {
     FileText,
     TrendingUp,
     CheckCircle,
-    LayoutDashboard
+    LayoutDashboard,
+    Eye
 } from 'lucide-react';
 
 // URL de base pour servir les images et l'API
@@ -198,6 +199,7 @@ export const generatePDFForFiche = async (fiche, shouldSave = true) => {
 const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isPreviewing, setIsPreviewing] = useState(false);
 
     const { register } = useForm({
         defaultValues: fiche,
@@ -216,13 +218,27 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
     const handleDownloadPDF = async () => {
         setIsDownloading(true);
         try {
-            // Cette fonction génère le PDF ET télécharge la photo séparée automatiquement
             await generatePDFForFiche(fiche, true);
         } catch (error) {
             console.error(error);
             alert(error.message);
         } finally {
             setIsDownloading(false);
+        }
+    };
+
+    const handlePreviewPDF = async () => {
+        setIsPreviewing(true);
+        try {
+            const buffer = await generatePDFForFiche(fiche, false);
+            const blob = new Blob([buffer], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        } finally {
+            setIsPreviewing(false);
         }
     };
 
@@ -250,6 +266,14 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
                             <Trash2 size={18} />
                         )}
                         Supprimer
+                    </button>
+                    <button
+                        onClick={handlePreviewPDF}
+                        className="btn btn-outline-primary rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
+                        disabled={isPreviewing}
+                    >
+                        {isPreviewing ? <span className="spinner-border spinner-border-sm"></span> : <Eye size={18} />}
+                        Voir PDF
                     </button>
                     <button
                         onClick={handleDownloadPDF}

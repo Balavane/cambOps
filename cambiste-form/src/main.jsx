@@ -7,6 +7,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
 import OperateurForm from './composant/OperateurForm.jsx';
 import OperateurList from './composant/OperateurList.jsx';
+import OperateurDetail from './composant/OperateurDetail.jsx';
 import Dashboard from './composant/Dashboard.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         {/* Routes Opérateurs */}
         <Route path="/enregistrement_operateur" element={<OperateurForm />} />
         <Route path="/liste_operateur" element={<OperateurList />} />
+        <Route path="/operateur/:operateurId" element={<OperateurDetail />} />
 
         {/* Route par défaut */}
         <Route path="*" element={<Navigate to="/" replace />} />

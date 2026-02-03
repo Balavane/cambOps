@@ -23,7 +23,8 @@ import {
     Smartphone,
     TrendingUp,
     FileText,
-    ArrowLeft
+    ArrowLeft,
+    Eye
 } from 'lucide-react';
 
 
@@ -293,29 +294,33 @@ export default function App({ view = "form" }) {
                                 <p className="text-muted small mb-0">{fiches.length} enregistrements au total</p>
                             </div>
                             <div className="d-flex gap-2">
-                                <button className="btn btn-light rounded-pill d-flex align-items-center" onClick={() => navigate('/')}>
-                                    🏠 Dashboard
+                                <button className="btn btn-light rounded-pill d-flex align-items-center gap-2 shadow-sm" onClick={() => navigate('/')}>
+                                    <Home size={18} /> Dashboard
                                 </button>
-                                <button className="btn btn-primary rounded-pill d-flex align-items-center" onClick={() => navigate('/nouveau_cambiste')}>
-                                    + Nouvelle Fiche
+                                <button className="btn btn-primary rounded-pill d-flex align-items-center gap-2" onClick={() => navigate('/nouveau_cambiste')}>
+                                    <UserPlus size={18} /> Nouvelle Fiche
                                 </button>
                             </div>
                         </div>
 
                         {/* BARRE DE FILTRES CORRIGÉE */}
-                        <div className="row g-2 mb-3 p-3 bg-light rounded-3 border">
+                        <div className="row g-2 mb-3 p-3 bg-light rounded-4 border-0">
                             <div className="col-md-4">
-                                <label className="form-label small fw-bold">Nom</label>
-                                <input type="text" className="form-control form-control-sm rounded-pill" placeholder="Nom..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                <label className="form-label small fw-bold text-muted uppercase">
+                                    <Search size={14} className="me-1" /> Nom
+                                </label>
+                                <input type="text" className="form-control border-0 bg-white rounded-pill px-3 shadow-sm" placeholder="Rechercher un nom..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                             </div>
                             <div className="col-md-4">
-                                <label className="form-label small fw-bold">Association</label>
-                                <input type="text" className="form-control form-control-sm rounded-pill" placeholder="Association..." value={filterAssociation} onChange={(e) => setFilterAssociation(e.target.value)} />
+                                <label className="form-label small fw-bold text-muted uppercase">
+                                    <Filter size={14} className="me-1" /> Association
+                                </label>
+                                <input type="text" className="form-control border-0 bg-white rounded-pill px-3 shadow-sm" placeholder="Filtrer par association..." value={filterAssociation} onChange={(e) => setFilterAssociation(e.target.value)} />
                             </div>
                             <div className="col-md-4">
-                                <label className="form-label small fw-bold">Activité</label>
-                                <select className="form-select form-select-sm rounded-pill" value={filterActivity} onChange={(e) => setFilterActivity(e.target.value)}>
-                                    <option value="all">Toutes</option>
+                                <label className="form-label small fw-bold text-muted uppercase">Activité</label>
+                                <select className="form-select border-0 bg-white rounded-pill px-3 shadow-sm" value={filterActivity} onChange={(e) => setFilterActivity(e.target.value)}>
+                                    <option value="all">Toutes les activités</option>
                                     <option value="airtelMoney">Airtel Money</option>
                                     <option value="mPesa">M-Pesa</option>
                                     <option value="orangeMoney">Orange Money</option>
@@ -367,8 +372,17 @@ export default function App({ view = "form" }) {
                                         <h6 className="mb-0 fw-bold">{fiche.nomPrenom}</h6>
                                         <small className="text-muted">{fiche.associationNom || 'Indépendant'} | {fiche.telephone}</small>
                                     </div>
-                                    <div className="col-auto">
-                                        <button onClick={() => viewDetails(fiche)} className="btn btn-sm text-white rounded-pill" style={{ backgroundColor: primaryColor }}>Détails</button>
+                                    <div className="col-auto d-flex gap-2">
+                                        <button onClick={async (e) => {
+                                            e.stopPropagation();
+                                            const buffer = await generatePDFForFiche(fiche, false);
+                                            const blob = new Blob([buffer], { type: 'application/pdf' });
+                                            const url = URL.createObjectURL(blob);
+                                            window.open(url, '_blank');
+                                        }} className="btn btn-sm btn-outline-info rounded-pill" title="Aperçu PDF">
+                                            <Eye size={16} />
+                                        </button>
+                                        <button onClick={() => viewDetails(fiche)} className="btn btn-sm text-white rounded-pill px-3" style={{ backgroundColor: primaryColor }}>Détails</button>
                                     </div>
                                 </div>
                             </div>

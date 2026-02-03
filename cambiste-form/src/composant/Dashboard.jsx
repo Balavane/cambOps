@@ -264,8 +264,15 @@ export default function Dashboard() {
                                         {stats.recentActivities.map((activity, index) => (
                                             <div
                                                 key={index}
-                                                className="d-flex align-items-center p-3 rounded-4 bg-light border-0 transition-all hover-translate-x"
-                                                style={{ transition: 'all 0.3s ease' }}
+                                                className="d-flex align-items-center p-3 rounded-4 bg-light border-0 transition-all hover-translate-x cursor-pointer"
+                                                style={{ transition: 'all 0.3s ease', cursor: 'pointer' }}
+                                                onClick={() => {
+                                                    if (activity.type === 'Cambiste') {
+                                                        navigate(`/fiche/${activity._id || activity.id}`);
+                                                    } else {
+                                                        navigate(`/operateur/${activity._id || activity.id}`);
+                                                    }
+                                                }}
                                             >
                                                 <div className="position-relative">
                                                     <img
