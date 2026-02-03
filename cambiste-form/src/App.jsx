@@ -373,16 +373,24 @@ export default function App({ view = "form" }) {
                                         <small className="text-muted">{fiche.associationNom || 'Indépendant'} | {fiche.telephone}</small>
                                     </div>
                                     <div className="col-auto d-flex gap-2">
+                                        <button onClick={() => viewDetails(fiche)} className="btn btn-sm btn-primary rounded-pill px-3 shadow-sm border-0" style={{ background: 'var(--primary)' }}>
+                                            Consulter
+                                        </button>
                                         <button onClick={async (e) => {
                                             e.stopPropagation();
                                             const buffer = await generatePDFForFiche(fiche, false);
                                             const blob = new Blob([buffer], { type: 'application/pdf' });
                                             const url = URL.createObjectURL(blob);
                                             window.open(url, '_blank');
-                                        }} className="btn btn-sm btn-outline-info rounded-pill" title="Aperçu PDF">
+                                        }} className="btn btn-sm btn-outline-info rounded-pill px-2 shadow-sm" title="Aperçu PDF">
                                             <Eye size={16} />
                                         </button>
-                                        <button onClick={() => viewDetails(fiche)} className="btn btn-sm text-white rounded-pill px-3" style={{ backgroundColor: primaryColor }}>Détails</button>
+                                        <button onClick={(e) => {
+                                            e.stopPropagation();
+                                            generatePDFForFiche(fiche, true);
+                                        }} className="btn btn-sm btn-outline-secondary rounded-pill px-2 shadow-sm" title="Télécharger PDF">
+                                            <Download size={16} />
+                                        </button>
                                     </div>
                                 </div>
                             </div>
