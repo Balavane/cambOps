@@ -276,133 +276,11 @@ export default function App({ view = "form" }) {
         );
     }
 
-    if (view === "list") {
-        const totalFiltered = fichesAffiches.length;
-        const startIndex = selectedBatchIndex * DOWNLOAD_BATCH_SIZE;
-        const currentBatchSize = Math.min(DOWNLOAD_BATCH_SIZE, totalFiltered - startIndex);
-
-        return (
-            <div className="d-flex justify-content-center align-items-start min-vh-100 bg-light p-3 animate-fade-in">
-                <div className="card shadow-md w-100 border-0" style={{ maxWidth: '1100px', borderRadius: '24px' }}>
-
-                    <div className="card-header bg-white p-4" style={{ borderRadius: '24px 24px 0 0', borderBottom: '1px solid #f1f5f9' }}>
-                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                            <div>
-                                <h5 className="fw-bold mb-1" style={{ color: 'var(--text-main)', fontSize: '1.25rem' }}>
-                                    Base de Données Cambistes
-                                </h5>
-                                <p className="text-muted small mb-0">{fiches.length} enregistrements au total</p>
-                            </div>
-                            <div className="d-flex gap-2">
-                                <button className="btn btn-light rounded-pill d-flex align-items-center gap-2 shadow-sm" onClick={() => navigate('/')}>
-                                    <Home size={18} /> Dashboard
-                                </button>
-                                <button className="btn btn-primary rounded-pill d-flex align-items-center gap-2" onClick={() => navigate('/nouveau_cambiste')}>
-                                    <UserPlus size={18} /> Nouvelle Fiche
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* BARRE DE FILTRES CORRIGÉE */}
-                        <div className="row g-2 mb-3 p-3 bg-light rounded-4 border-0">
-                            <div className="col-md-4">
-                                <label className="form-label small fw-bold text-muted uppercase">
-                                    <Search size={14} className="me-1" /> Nom
-                                </label>
-                                <input type="text" className="form-control border-0 bg-white rounded-pill px-3 shadow-sm" placeholder="Rechercher un nom..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                            </div>
-                            <div className="col-md-4">
-                                <label className="form-label small fw-bold text-muted uppercase">
-                                    <Filter size={14} className="me-1" /> Association
-                                </label>
-                                <input type="text" className="form-control border-0 bg-white rounded-pill px-3 shadow-sm" placeholder="Filtrer par association..." value={filterAssociation} onChange={(e) => setFilterAssociation(e.target.value)} />
-                            </div>
-                            <div className="col-md-4">
-                                <label className="form-label small fw-bold text-muted uppercase">Activité</label>
-                                <select className="form-select border-0 bg-white rounded-pill px-3 shadow-sm" value={filterActivity} onChange={(e) => setFilterActivity(e.target.value)}>
-                                    <option value="all">Toutes les activités</option>
-                                    <option value="airtelMoney">Airtel Money</option>
-                                    <option value="mPesa">M-Pesa</option>
-                                    <option value="orangeMoney">Orange Money</option>
-                                    <option value="afrimoney">Afrimoney</option>
-                                    <option value="changeManuel">Change Manuel</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="p-3 border rounded-3 d-flex flex-wrap align-items-center bg-white">
-                            <label className="fw-semibold me-2 small">Date :</label>
-                            <input type="date" className="form-control form-control-sm rounded-pill me-3" style={{ maxWidth: '140px' }} value={downloadDate} onChange={(e) => setDownloadDate(e.target.value)} />
-
-                            {totalBatches > 0 && (
-                                <>
-                                    <label className="fw-semibold me-2 small">Lot :</label>
-                                    <select className="form-select form-select-sm rounded-pill me-3" style={{ maxWidth: '140px' }} value={selectedBatchIndex} onChange={(e) => setSelectedBatchIndex(parseInt(e.target.value))}>
-                                        {Array.from({ length: totalBatches }, (_, i) => (
-                                            <option key={i} value={i}>Lot {i + 1} ({i * DOWNLOAD_BATCH_SIZE + 1} - {Math.min((i + 1) * DOWNLOAD_BATCH_SIZE, totalFiltered)})</option>
-                                        ))}
-                                    </select>
-                                </>
-                            )}
-
-                            <button onClick={handleDownloadSelectedBatch} className="btn btn-sm btn-success rounded-pill" disabled={isBatchDownloading || totalFiltered === 0}>
-                                {isBatchDownloading ? `Lot ${selectedBatchIndex + 1}: ${currentDownloadIndex}/${currentBatchSize}` : `Télécharger ZIP (${totalFiltered})`}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="card-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                        {fichesAffiches.length > 0 ? fichesAffiches.map((fiche, index) => (
-                            <div key={fiche._id || fiche.id} className="card mb-2 shadow-sm border-0" style={{ backgroundColor: index % 2 === 0 ? lightOrange : '#fff' }}>
-                                <div className="card-body p-2 row align-items-center">
-                                    <div className="col-auto">
-                                        <div className="bg-light rounded d-flex align-items-center justify-content-center" style={{ width: '40px', height: '50px', overflow: 'hidden' }}>
-                                            {fiche.photoIDPath ? (
-                                                <img
-                                                    src={`${UPLOADS_BASE_URL}${fiche.photoIDPath.startsWith('uploads/') ? fiche.photoIDPath : 'uploads/' + fiche.photoIDPath}`}
-                                                    alt=""
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                />
-                                            ) : (
-                                                <span className="text-muted" style={{ fontSize: '10px' }}>N/A</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="col">
-                                        <h6 className="mb-0 fw-bold">{fiche.nomPrenom}</h6>
-                                        <small className="text-muted">{fiche.associationNom || 'Indépendant'} | {fiche.telephone}</small>
-                                    </div>
-                                    <div className="col-auto d-flex gap-2">
-                                        <button onClick={() => viewDetails(fiche)} className="btn btn-sm btn-primary rounded-pill px-3 shadow-sm border-0" style={{ background: 'var(--primary)' }}>
-                                            Consulter
-                                        </button>
-                                        <button onClick={async (e) => {
-                                            e.stopPropagation();
-                                            const buffer = await generatePDFForFiche(fiche, false);
-                                            const blob = new Blob([buffer], { type: 'application/pdf' });
-                                            const url = URL.createObjectURL(blob);
-                                            window.open(url, '_blank');
-                                        }} className="btn btn-sm btn-outline-info rounded-pill px-2 shadow-sm" title="Aperçu PDF">
-                                            <Eye size={16} />
-                                        </button>
-                                        <button onClick={(e) => {
-                                            e.stopPropagation();
-                                            generatePDFForFiche(fiche, true);
-                                        }} className="btn btn-sm btn-outline-secondary rounded-pill px-2 shadow-sm" title="Télécharger PDF">
-                                            <Download size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )) : <div className="text-center p-5 text-muted">Aucun résultat.</div>}
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     // --- RENDER LIST ---
     if (view === "list") {
+        const totalFiltered = fichesAffiches.length;
+
         return (
             <div className="min-vh-100 bg-light animate-fade-in pb-5">
                 {/* Header Page */}
@@ -438,23 +316,23 @@ export default function App({ view = "form" }) {
                         {/* Barre d'outils List */}
                         <div className="card-header bg-white border-0 p-4">
                             <div className="row g-3 align-items-center">
-                                <div className="col-md-4">
+                                <div className="col-md-3">
                                     <div className="input-group bg-light rounded-pill px-3 py-1">
                                         <span className="input-group-text bg-transparent border-0 text-muted"><Search size={18} /></span>
-                                        <input type="text" className="form-control bg-transparent border-0 shadow-none ps-0" placeholder="Rechercher par nom..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                        <input type="text" className="form-control bg-transparent border-0 shadow-none ps-0" placeholder="Nom..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                     </div>
                                 </div>
-                                <div className="col-md-3">
+                                <div className="col-md-2">
                                     <div className="input-group bg-light rounded-pill px-3 py-1">
                                         <span className="input-group-text bg-transparent border-0 text-muted"><Shield size={18} /></span>
-                                        <input type="text" className="form-control bg-transparent border-0 shadow-none ps-0" placeholder="Association..." value={filterAssociation} onChange={(e) => setFilterAssociation(e.target.value)} />
+                                        <input type="text" className="form-control bg-transparent border-0 shadow-none ps-0" placeholder="Assoc..." value={filterAssociation} onChange={(e) => setFilterAssociation(e.target.value)} />
                                     </div>
                                 </div>
-                                <div className="col-md-3">
+                                <div className="col-md-2">
                                     <div className="input-group bg-light rounded-pill px-3 py-1">
                                         <span className="input-group-text bg-transparent border-0 text-muted"><Filter size={18} /></span>
                                         <select className="form-select bg-transparent border-0 shadow-none ps-0" value={filterActivity} onChange={(e) => setFilterActivity(e.target.value)}>
-                                            <option value="all">Toutes les activités</option>
+                                            <option value="all">Activités</option>
                                             {["airtelMoney", "mPesa", "orangeMoney", "afrimoney", "changeManuel"].map(act => (
                                                 <option key={act} value={act}>{act}</option>
                                             ))}
@@ -462,13 +340,26 @@ export default function App({ view = "form" }) {
                                     </div>
                                 </div>
                                 <div className="col-md-2">
-                                    <button onClick={handleDownloadSelectedBatch} className="btn btn-primary rounded-pill w-100 py-2 shadow-sm d-flex align-items-center justify-content-center gap-2" disabled={isBatchDownloading || totalFiltered === 0} style={{ background: 'var(--primary)', border: 'none' }}>
+                                    <div className="input-group bg-light rounded-pill px-3 py-1">
+                                        <span className="input-group-text bg-transparent border-0 text-muted"><Calendar size={18} /></span>
+                                        <input type="date" className="form-control bg-transparent border-0 shadow-none ps-0" value={downloadDate} onChange={(e) => setDownloadDate(e.target.value)} />
+                                    </div>
+                                </div>
+                                <div className="col-md-3 d-flex gap-2">
+                                    {totalBatches > 1 && (
+                                        <select className="form-select form-select-sm rounded-pill bg-light border-0 shadow-none" style={{ width: '80px', fontSize: '11px' }} value={selectedBatchIndex} onChange={(e) => setSelectedBatchIndex(parseInt(e.target.value))}>
+                                            {Array.from({ length: totalBatches }, (_, i) => (
+                                                <option key={i} value={i}>L{i + 1}</option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    <button onClick={handleDownloadSelectedBatch} className="btn btn-primary rounded-pill flex-grow-1 py-1 shadow-sm d-flex align-items-center justify-content-center gap-1" disabled={isBatchDownloading || totalFiltered === 0} style={{ background: 'var(--primary)', border: 'none', fontSize: '12px' }}>
                                         {isBatchDownloading ? (
-                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" style={{ width: '12px', height: '12px' }}></span>
                                         ) : (
-                                            <Download size={18} />
+                                            <Download size={14} />
                                         )}
-                                        {isBatchDownloading ? 'ZIP...' : 'Exporter ZIP'}
+                                        {isBatchDownloading ? '...' : `ZIP (${totalFiltered})`}
                                     </button>
                                 </div>
                             </div>
@@ -524,9 +415,26 @@ export default function App({ view = "form" }) {
                                                 <span className="badge rounded-pill bg-success bg-opacity-10 text-success px-3 py-2 border border-success border-opacity-25" style={{ fontSize: '11px' }}>Identifié</span>
                                             </td>
                                             <td className="pe-4 py-3 text-end">
-                                                <button onClick={() => viewDetails(fiche)} className="btn btn-outline-primary btn-sm rounded-pill px-4 hover-lift">
-                                                    Consulter
-                                                </button>
+                                                <div className="d-flex gap-2 justify-content-end">
+                                                    <button onClick={() => viewDetails(fiche)} className="btn btn-primary btn-sm rounded-pill px-3 shadow-sm border-0" style={{ background: primaryColor }}>
+                                                        Consulter
+                                                    </button>
+                                                    <button onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        const buffer = await generatePDFForFiche(fiche, false);
+                                                        const blob = new Blob([buffer], { type: 'application/pdf' });
+                                                        const url = URL.createObjectURL(blob);
+                                                        window.open(url, '_blank');
+                                                    }} className="btn btn-outline-info btn-sm rounded-pill px-2 shadow-sm" title="Aperçu PDF">
+                                                        <Eye size={16} />
+                                                    </button>
+                                                    <button onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        generatePDFForFiche(fiche, true);
+                                                    }} className="btn btn-outline-secondary btn-sm rounded-pill px-2 shadow-sm" title="Télécharger PDF">
+                                                        <Download size={16} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     )) : (
