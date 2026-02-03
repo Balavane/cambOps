@@ -212,7 +212,8 @@ export default function OperateurList() {
                 // Ajout de la photo dans le ZIP (si disponible)
                 if (op.photoPath) {
                     try {
-                        const photoUrl = `${UPLOADS_BASE_URL}${op.photoPath}`;
+                        const photoSrc = op.photoPath.startsWith('uploads/') ? op.photoPath : 'uploads/' + op.photoPath;
+                        const photoUrl = `${UPLOADS_BASE_URL}${photoSrc}`;
                         const response = await fetch(photoUrl);
                         if (response.ok) {
                             const blob = await response.blob();

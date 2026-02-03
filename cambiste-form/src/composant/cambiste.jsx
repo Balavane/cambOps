@@ -216,26 +216,8 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
     const handleDownloadPDF = async () => {
         setIsDownloading(true);
         try {
-            // 1) Génération + téléchargement du PDF
-            await generatePDFForFiche(fiche, true); // shouldSave est explicitement true
-
-            // 2) Téléchargement séparé de la photo (si disponible)
-            if (fiche.photoIDPath) {
-                const photoUrl = `${UPLOADS_BASE_URL}${fiche.photoIDPath}`;
-                const safeName = fiche.nomPrenom
-                    ? fiche.nomPrenom.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')
-                    : 'Photo_Cambiste';
-
-                const link = document.createElement('a');
-                link.href = photoUrl;
-                link.download = `Photo_${safeName}${fiche.photoIDPath.lastIndexOf('.') !== -1
-                    ? fiche.photoIDPath.substring(fiche.photoIDPath.lastIndexOf('.'))
-                    : '.jpg'
-                    }`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
+            // Cette fonction génère le PDF ET télécharge la photo séparée automatiquement
+            await generatePDFForFiche(fiche, true);
         } catch (error) {
             console.error(error);
             alert(error.message);

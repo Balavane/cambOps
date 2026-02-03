@@ -187,7 +187,7 @@ export default function App({ view = "form" }) {
                         // Ajout de la photo séparée dans le même ZIP (si disponible)
                         if (fiche.photoIDPath) {
                             try {
-                                const photoSrc = fiche.photoIDPath.startsWith('uploads/') ? fiche.photoIDPath : 'uploads/' + fiche.photoIDPath;
+                                const photoSrc = fiche.photoIDPath && fiche.photoIDPath.startsWith('uploads/') ? fiche.photoIDPath : 'uploads/' + fiche.photoIDPath;
                                 const photoUrl = `${UPLOADS_BASE_URL}${photoSrc}`;
                                 const response = await fetch(photoUrl);
                                 if (response.ok) {
