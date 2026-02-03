@@ -1,3 +1,7 @@
+import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import {
     ArrowLeft,
     Download,
@@ -13,7 +17,10 @@ import {
     TrendingUp,
     CheckCircle,
     LayoutDashboard,
-    Eye
+    Eye,
+    Edit2,
+    Save,
+    X
 } from 'lucide-react';
 
 // URL de base pour servir les images et l'API
@@ -200,10 +207,19 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isPreviewing, setIsPreviewing] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const { register } = useForm({
-        defaultValues: fiche,
+    const { register, handleSubmit, reset } = useForm({
+        defaultValues: fiche || {},
     });
+
+    if (!fiche) return (
+        <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status"></div>
+            <p className="mt-2 text-muted">Chargement de la fiche...</p>
+        </div>
+    );
 
     useEffect(() => {
     }, [fiche]);
@@ -242,12 +258,39 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
         }
     };
 
+    const handleSave = async (data) => {
+        setIsSaving(true);
+        const id = fiche._id || fiche.id;
+        try {
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) throw new Error("Erreur lors de la mise à jour");
+
+            const updatedFiche = await response.json();
+            setIsEditing(false);
+            alert("Mise à jour réussie !");
+            // Note: In a real app, you might want to call a prop function here to update the parent state
+            // For now, reload or local update
+            window.location.reload();
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
 
     return (
-        <div className="container py-5 animate-fade-in">
+        <form onSubmit={handleSubmit(handleSave)} className="container py-5 animate-fade-in">
             {/* Header / Actions bar */}
             <div className="d-flex justify-content-between align-items-center mb-5 no-print">
                 <button
+                    type="button"
                     onClick={onClose}
                     className="btn btn-outline-dark rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
                 >
@@ -255,39 +298,76 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
                     Retour à la liste
                 </button>
                 <div className="d-flex gap-2">
-                    <button
-                        onClick={handleDelete}
-                        className="btn btn-outline-danger rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
-                        disabled={!(fiche._id || fiche.id) || isDeleting}
-                    >
-                        {isDeleting ? (
-                            <span className="spinner-border spinner-border-sm" role="status"></span>
+                    <div className="d-flex gap-2">
+                        {isEditing ? (
+                            <React.Fragment key="editing-buttons">
+                                <button
+                                    type="button"
+                                    onClick={() => { setIsEditing(false); reset(); }}
+                                    className="btn btn-outline-dark rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
+                                    disabled={isSaving}
+                                >
+                                    <X size={18} />
+                                    Annuler
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn btn-success rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift border-0"
+                                    style={{ background: '#059669' }}
+                                    disabled={isSaving}
+                                >
+                                    {isSaving ? <span className="spinner-border spinner-border-sm"></span> : <Save size={18} />}
+                                    Enregistrer
+                                </button>
+                            </React.Fragment>
                         ) : (
-                            <Trash2 size={18} />
+                            <React.Fragment key="view-buttons">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditing(true)}
+                                    className="btn btn-outline-warning rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
+                                >
+                                    <Edit2 size={18} />
+                                    Modifier
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleDelete}
+                                    className="btn btn-outline-danger rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
+                                    disabled={!(fiche._id || fiche.id) || isDeleting}
+                                >
+                                    {isDeleting ? (
+                                        <span className="spinner-border spinner-border-sm" role="status"></span>
+                                    ) : (
+                                        <Trash2 size={18} />
+                                    )}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handlePreviewPDF}
+                                    className="btn btn-outline-primary rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
+                                    disabled={isPreviewing}
+                                >
+                                    {isPreviewing ? <span className="spinner-border spinner-border-sm"></span> : <Eye size={18} />}
+                                    Voir PDF
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleDownloadPDF}
+                                    className="btn btn-primary rounded-pill d-flex align-items-center gap-2 px-4 shadow-lg hover-lift border-0"
+                                    style={{ background: 'linear-gradient(90deg, var(--primary) 0%, #dc2626 100%)' }}
+                                    disabled={isDownloading}
+                                >
+                                    {isDownloading ? (
+                                        <span className="spinner-border spinner-border-sm" role="status"></span>
+                                    ) : (
+                                        <Download size={18} />
+                                    )}
+                                    Télécharger le PDF
+                                </button>
+                            </React.Fragment>
                         )}
-                        Supprimer
-                    </button>
-                    <button
-                        onClick={handlePreviewPDF}
-                        className="btn btn-outline-primary rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
-                        disabled={isPreviewing}
-                    >
-                        {isPreviewing ? <span className="spinner-border spinner-border-sm"></span> : <Eye size={18} />}
-                        Voir PDF
-                    </button>
-                    <button
-                        onClick={handleDownloadPDF}
-                        className="btn btn-primary rounded-pill d-flex align-items-center gap-2 px-4 shadow-lg hover-lift border-0"
-                        style={{ background: 'linear-gradient(90deg, var(--primary) 0%, #dc2626 100%)' }}
-                        disabled={isDownloading}
-                    >
-                        {isDownloading ? (
-                            <span className="spinner-border spinner-border-sm" role="status"></span>
-                        ) : (
-                            <Download size={18} />
-                        )}
-                        Télécharger le PDF
-                    </button>
+                    </div>
                 </div>
             </div>
 
@@ -321,7 +401,15 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
                                 <Shield size={14} className="me-2" />
                                 FICHE D'IDENTIFICATION OFFICIELLE
                             </span>
-                            <h1 className="display-6 fw-bold mb-2">{fiche.nomPrenom}</h1>
+                            {isEditing ? (
+                                <input
+                                    {...register("nomPrenom")}
+                                    className="form-control form-control-lg bg-white bg-opacity-10 text-white border-white border-opacity-25 mb-2 fw-bold text-center text-md-start"
+                                    style={{ fontSize: '2.5rem' }}
+                                />
+                            ) : (
+                                <h1 className="display-6 fw-bold mb-2">{fiche.nomPrenom}</h1>
+                            )}
                             <div className="d-flex flex-wrap justify-content-center justify-content-md-start gap-3 opacity-90">
                                 <span className="d-flex align-items-center gap-2 small">
                                     <FileText size={16} />
@@ -343,23 +431,35 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
                         <div className="col-lg-6">
                             <div className="mb-5">
                                 <h5 className="fw-bold mb-4 d-flex align-items-center">
-                                    <div className="bg-primary rounded-3 me-3 p-2 text-white" style={{ background: 'var(--primary)' }}>
+                                    <span className="bg-primary rounded-3 me-3 p-2 text-white d-flex align-items-center justify-content-center" style={{ background: 'var(--primary)' }}>
                                         <User size={18} />
-                                    </div>
+                                    </span>
                                     DONNÉES INDIVIDUELLES
                                 </h5>
                                 <div className="space-y-4">
                                     {[
-                                        { label: 'Sexe', value: formatValue('sexe', fiche.sexe), icon: <User size={14} /> },
-                                        { label: 'Nationalité', value: fiche.nationalite, icon: <Shield size={14} /> },
-                                        { label: 'Né le', value: formatValue('date', fiche.dateNaissance), icon: <Calendar size={14} /> },
-                                        { label: 'À', value: fiche.lieuNaissance, icon: <MapPin size={14} /> },
-                                        { label: 'Document', value: fiche.documentIdentite, icon: <FileText size={14} /> },
-                                        { label: 'Adresse', value: fiche.adresse, icon: <MapPin size={14} /> },
+                                        { label: 'Sexe', key: 'sexe', type: 'select', options: ['Masculin', 'Féminin'] },
+                                        { label: 'Nationalité', key: 'nationalite' },
+                                        { label: 'Né le', key: 'dateNaissance', type: 'date' },
+                                        { label: 'À', key: 'lieuNaissance' },
+                                        { label: 'Document', key: 'documentIdentite' },
+                                        { label: 'Adresse', key: 'adresse' },
                                     ].map((item, idx) => (
                                         <div key={idx} className="d-flex align-items-center py-2 border-bottom-dashed">
                                             <span className="text-muted small fw-bold text-uppercase w-40">{item.label}</span>
-                                            <span className="fw-semibold text-dark">{item.value || 'Non renseigné'}</span>
+                                            {isEditing ? (
+                                                item.type === 'select' ? (
+                                                    <select {...register(item.key)} className="form-select form-select-sm border-0 bg-light rounded-pill">
+                                                        {item.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                    </select>
+                                                ) : (
+                                                    <input type={item.type || 'text'} {...register(item.key)} className="form-control form-control-sm border-0 bg-light rounded-pill" />
+                                                )
+                                            ) : (
+                                                <span className="fw-semibold text-dark">
+                                                    {item.key.startsWith('date') ? formatValue('date', fiche[item.key]) : (fiche[item.key] || 'Non renseigné')}
+                                                </span>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -367,36 +467,51 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
 
                             <div className="mb-5">
                                 <h5 className="fw-bold mb-4 d-flex align-items-center">
-                                    <div className="bg-success rounded-3 me-3 p-2 text-white" style={{ background: '#10b981' }}>
+                                    <span className="bg-success rounded-3 me-3 p-2 text-white d-flex align-items-center justify-content-center" style={{ background: '#10b981' }}>
                                         <Smartphone size={18} />
-                                    </div>
+                                    </span>
                                     CONTACT & ACTIVITÉS
                                 </h5>
                                 <div className="p-4 bg-light rounded-4 mb-4">
                                     <div className="d-flex align-items-center mb-3">
                                         <Phone size={16} className="text-primary me-3" />
-                                        <span className="fw-bold fs-5">{fiche.telephone}</span>
+                                        {isEditing ? (
+                                            <input {...register("telephone")} className="form-control form-control-sm border-0 bg-white rounded-pill" />
+                                        ) : (
+                                            <span className="fw-bold fs-5">{fiche.telephone}</span>
+                                        )}
                                     </div>
-                                    {fiche.email && (
-                                        <div className="d-flex align-items-center mb-2">
-                                            <Mail size={16} className="text-primary me-3" />
-                                            <span>{fiche.email}</span>
-                                        </div>
-                                    )}
-                                    {fiche.autresActivites && (
-                                        <div className="d-flex align-items-center mt-3 pt-3 border-top border-secondary border-opacity-10">
-                                            <TrendingUp size={16} className="text-primary me-3" />
-                                            <span className="small"><strong>Autres :</strong> {fiche.autresActivites}</span>
-                                        </div>
-                                    )}
+                                    <div className="d-flex align-items-center mb-2">
+                                        <Mail size={16} className="text-primary me-3" />
+                                        {isEditing ? (
+                                            <input {...register("email")} className="form-control form-control-sm border-0 bg-white rounded-pill" placeholder="Email (optionnel)" />
+                                        ) : (
+                                            <span>{fiche.email || 'N/A'}</span>
+                                        )}
+                                    </div>
+                                    <div className="d-flex align-items-center mt-3 pt-3 border-top border-secondary border-opacity-10">
+                                        <TrendingUp size={16} className="text-primary me-3" />
+                                        {isEditing ? (
+                                            <input {...register("autresActivites")} className="form-control form-control-sm border-0 bg-white rounded-pill" placeholder="Autres activités..." />
+                                        ) : (
+                                            <span className="small"><strong>Autres :</strong> {fiche.autresActivites || 'Aucune'}</span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="d-flex flex-wrap gap-2">
                                     {["airtelMoney", "mPesa", "orangeMoney", "afrimoney", "changeManuel", "venteTelecom"].map(act => (
-                                        fiche[act] && (
-                                            <span key={act} className="badge rounded-pill bg-white border px-3 py-2 text-dark shadow-sm d-flex align-items-center gap-2">
-                                                <CheckCircle size={14} className="text-success" />
-                                                {act.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                            </span>
+                                        isEditing ? (
+                                            <div key={act} className="form-check form-check-inline bg-light rounded-pill px-3 py-1 m-0 border border-secondary border-opacity-10">
+                                                <input type="checkbox" {...register(act)} className="form-check-input" id={`edit-${act}`} />
+                                                <label className="form-check-label small" htmlFor={`edit-${act}`}>{act.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</label>
+                                            </div>
+                                        ) : (
+                                            fiche[act] && (
+                                                <span key={act} className="badge rounded-pill bg-white border px-3 py-2 text-dark shadow-sm d-flex align-items-center gap-2">
+                                                    <CheckCircle size={14} className="text-success" />
+                                                    {act.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                                </span>
+                                            )
                                         )
                                     ))}
                                 </div>
@@ -407,41 +522,61 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
                         <div className="col-lg-6">
                             <div className="mb-5 p-4 rounded-4 border border-2 border-dashed border-light h-100">
                                 <h5 className="fw-bold mb-4 d-flex align-items-center">
-                                    <div className="bg-dark rounded-3 me-3 p-2 text-white">
+                                    <span className="bg-dark rounded-3 me-3 p-2 text-white d-flex align-items-center justify-content-center">
                                         <Shield size={18} />
-                                    </div>
+                                    </span>
                                     GARANTIE & ASSOCIATION
                                 </h5>
                                 <div className="space-y-4">
                                     <div className="mb-4">
                                         <p className="text-muted small fw-bold text-uppercase mb-1">Association</p>
-                                        <p className="fw-bold fs-5 text-primary mb-0">{fiche.associationNom || 'INDÉPENDANT'}</p>
+                                        {isEditing ? (
+                                            <input {...register("associationNom")} className="form-control border-0 bg-light rounded-pill" placeholder="Nom association..." />
+                                        ) : (
+                                            <p className="fw-bold fs-5 text-primary mb-0">{fiche.associationNom || 'INDÉPENDANT'}</p>
+                                        )}
                                     </div>
                                     <div className="row g-3">
                                         <div className="col-4">
                                             <p className="text-muted small fw-bold text-uppercase mb-1">N° Enr.</p>
-                                            <p className="fw-semibold mb-0">{fiche.associationNumero || '-'}</p>
+                                            {isEditing ? (
+                                                <input {...register("associationNumero")} className="form-control form-control-sm border-0 bg-light rounded-pill" />
+                                            ) : (
+                                                <p className="fw-semibold mb-0">{fiche.associationNumero || '-'}</p>
+                                            )}
                                         </div>
                                         <div className="col-4">
                                             <p className="text-muted small fw-bold text-uppercase mb-1">Responsable</p>
-                                            <p className="fw-semibold mb-0 text-truncate" title={fiche.associationResponsable}>{fiche.associationResponsable || '-'}</p>
+                                            {isEditing ? (
+                                                <input {...register("associationResponsable")} className="form-control form-control-sm border-0 bg-light rounded-pill" />
+                                            ) : (
+                                                <p className="fw-semibold mb-0 text-truncate" title={fiche.associationResponsable}>{fiche.associationResponsable || '-'}</p>
+                                            )}
                                         </div>
                                         <div className="col-4">
                                             <p className="text-muted small fw-bold text-uppercase mb-1">Contact</p>
-                                            <p className="fw-semibold mb-0">{fiche.associationContact || '-'}</p>
+                                            {isEditing ? (
+                                                <input {...register("associationContact")} className="form-control form-control-sm border-0 bg-light rounded-pill" />
+                                            ) : (
+                                                <p className="fw-semibold mb-0">{fiche.associationContact || '-'}</p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="mt-4 p-3 bg-primary bg-opacity-10 rounded-3 border border-primary border-opacity-10">
                                         <p className="text-primary small fw-bold text-uppercase mb-1">Nature de la Garantie</p>
-                                        <p className="mb-0 fw-medium">{fiche.garantieNature || 'Aucune garantie renseignée'}</p>
+                                        {isEditing ? (
+                                            <textarea {...register("garantieNature")} className="form-control border-0 bg-white rounded-3 mt-2" rows="2" placeholder="Détails de la garantie..."></textarea>
+                                        ) : (
+                                            <p className="mb-0 fw-medium">{fiche.garantieNature || 'Aucune garantie renseignée'}</p>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className="mt-5 pt-4 border-top">
                                     <h5 className="fw-bold mb-4 d-flex align-items-center text-secondary">
-                                        <div className="bg-secondary rounded-3 me-3 p-2 text-white opacity-50">
+                                        <span className="bg-secondary rounded-3 me-3 p-2 text-white opacity-50 d-flex align-items-center justify-content-center">
                                             <CheckCircle size={18} />
-                                        </div>
+                                        </span>
                                         VALIDATION AREFA
                                     </h5>
                                     <div className="space-y-3">
@@ -484,7 +619,7 @@ const FicheDetail = ({ fiche, onClose, onFicheDeleted }) => {
                 .w-40 { width: 40%; }
                 .hover-lift:hover { transform: translateY(-3px); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
             `}} />
-        </div>
+        </form>
     );
 };
 

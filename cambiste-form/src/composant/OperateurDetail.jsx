@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import {
     ArrowLeft,
     Download,
@@ -14,7 +15,10 @@ import {
     FileText,
     TrendingUp,
     CheckCircle,
-    Eye
+    Eye,
+    Edit2,
+    Save,
+    X
 } from 'lucide-react';
 import { generatePDFForOperateur } from './OperateurList';
 
@@ -29,6 +33,10 @@ export default function OperateurDetail() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isPreviewing, setIsPreviewing] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const { register, handleSubmit, reset } = useForm();
 
     useEffect(() => {
         fetchOperateur();
@@ -40,10 +48,35 @@ export default function OperateurDetail() {
             if (!response.ok) throw new Error("Non trouvé");
             const data = await response.json();
             setOp(data);
+            reset(data); // Populate form with data
             setLoading(false);
         } catch (error) {
             console.error(error);
             setLoading(false);
+        }
+    };
+
+    const handleSave = async (data) => {
+        setIsSaving(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/operateurs/${operateurId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) throw new Error("Erreur lors de la mise à jour");
+
+            const updatedOp = await response.json();
+            setOp(updatedOp);
+            setIsEditing(false);
+            alert("Mise à jour de l'opérateur réussie !");
+            window.location.reload();
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -94,9 +127,10 @@ export default function OperateurDetail() {
     if (!op) return <div className="text-center py-5">Opérateur non trouvé.</div>;
 
     return (
-        <div className="container py-5 animate-fade-in">
+        <form onSubmit={handleSubmit(handleSave)} className="container py-5 animate-fade-in">
             <div className="d-flex justify-content-between align-items-center mb-5 no-print">
                 <button
+                    type="button"
                     onClick={() => navigate('/liste_operateur')}
                     className="btn btn-outline-dark rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
                 >
@@ -104,31 +138,67 @@ export default function OperateurDetail() {
                     Retour à la liste
                 </button>
                 <div className="d-flex gap-2">
-                    <button
-                        onClick={handleDelete}
-                        className="btn btn-outline-danger rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
-                        disabled={isDeleting}
-                    >
-                        {isDeleting ? <span className="spinner-border spinner-border-sm"></span> : <Trash2 size={18} />}
-                        Supprimer
-                    </button>
-                    <button
-                        onClick={handlePreviewPDF}
-                        className="btn btn-outline-primary rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
-                        disabled={isPreviewing}
-                    >
-                        {isPreviewing ? <span className="spinner-border spinner-border-sm"></span> : <Eye size={18} />}
-                        Aperçu PDF
-                    </button>
-                    <button
-                        onClick={handleDownloadPDF}
-                        className="btn btn-primary rounded-pill d-flex align-items-center gap-2 px-4 shadow-lg hover-lift border-0"
-                        style={{ background: 'linear-gradient(90deg, var(--primary) 0%, #dc2626 100%)' }}
-                        disabled={isDownloading}
-                    >
-                        {isDownloading ? <span className="spinner-border spinner-border-sm"></span> : <Download size={18} />}
-                        Télécharger
-                    </button>
+                    {isEditing ? (
+                        <React.Fragment key="editing-buttons">
+                            <button
+                                type="button"
+                                onClick={() => { setIsEditing(false); reset(); }}
+                                className="btn btn-outline-dark rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
+                                disabled={isSaving}
+                            >
+                                <X size={18} />
+                                Annuler
+                            </button>
+                            <button
+                                type="submit"
+                                className="btn btn-success rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift border-0"
+                                style={{ background: '#059669' }}
+                                disabled={isSaving}
+                            >
+                                {isSaving ? <span className="spinner-border spinner-border-sm"></span> : <Save size={18} />}
+                                Enregistrer
+                            </button>
+                        </React.Fragment>
+                    ) : (
+                        <React.Fragment key="view-buttons">
+                            <button
+                                type="button"
+                                onClick={() => setIsEditing(true)}
+                                className="btn btn-outline-warning rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
+                            >
+                                <Edit2 size={18} />
+                                Modifier
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDelete}
+                                className="btn btn-outline-danger rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? <span className="spinner-border spinner-border-sm"></span> : <Trash2 size={18} />}
+                                Supprimer
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handlePreviewPDF}
+                                className="btn btn-outline-primary rounded-pill d-flex align-items-center gap-2 px-4 shadow-sm hover-lift"
+                                disabled={isPreviewing}
+                            >
+                                {isPreviewing ? <span className="spinner-border spinner-border-sm"></span> : <Eye size={18} />}
+                                Aperçu PDF
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDownloadPDF}
+                                className="btn btn-primary rounded-pill d-flex align-items-center gap-2 px-4 shadow-lg hover-lift border-0"
+                                style={{ background: 'linear-gradient(90deg, var(--primary) 0%, #dc2626 100%)' }}
+                                disabled={isDownloading}
+                            >
+                                {isDownloading ? <span className="spinner-border spinner-border-sm"></span> : <Download size={18} />}
+                                Télécharger
+                            </button>
+                        </React.Fragment>
+                    )}
                 </div>
             </div>
 
@@ -160,7 +230,15 @@ export default function OperateurDetail() {
                                 <Shield size={14} className="me-2" />
                                 FICHE OPÉRATEUR AREFA
                             </span>
-                            <h1 className="display-6 fw-bold mb-2">{op.nomPrenom}</h1>
+                            {isEditing ? (
+                                <input
+                                    {...register("nomPrenom")}
+                                    className="form-control form-control-lg bg-white bg-opacity-10 text-white border-white border-opacity-25 mb-2 fw-bold text-center text-md-start"
+                                    style={{ fontSize: '2.5rem' }}
+                                />
+                            ) : (
+                                <h1 className="display-6 fw-bold mb-2">{op.nomPrenom}</h1>
+                            )}
                             <div className="d-flex flex-wrap justify-content-center justify-content-md-start gap-3 opacity-90">
                                 <span className="d-flex align-items-center gap-2 small">
                                     <FileText size={16} />
@@ -180,23 +258,35 @@ export default function OperateurDetail() {
                         <div className="col-lg-6">
                             <div className="mb-5">
                                 <h5 className="fw-bold mb-4 d-flex align-items-center">
-                                    <div className="bg-primary rounded-3 me-3 p-2 text-white" style={{ background: 'var(--primary)' }}>
+                                    <span className="bg-primary rounded-3 me-3 p-2 text-white d-flex align-items-center justify-content-center" style={{ background: 'var(--primary)' }}>
                                         <User size={18} />
-                                    </div>
+                                    </span>
                                     INFORMATIONS PERSONNELLES
                                 </h5>
                                 <div className="space-y-4">
                                     {[
-                                        { label: 'Sexe', value: op.sexe, icon: <User size={14} /> },
-                                        { label: 'Nationalité', value: op.nationalite, icon: <Shield size={14} /> },
-                                        { label: 'Né le', value: op.dateNaissance ? new Date(op.dateNaissance).toLocaleDateString('fr-FR') : 'N/A', icon: <Calendar size={14} /> },
-                                        { label: 'À', value: op.lieuNaissance, icon: <MapPin size={14} /> },
-                                        { label: 'Document', value: op.documentIdentite, icon: <FileText size={14} /> },
-                                        { label: 'Adresse', value: op.adresse, icon: <MapPin size={14} /> },
+                                        { label: 'Sexe', key: 'sexe', type: 'select', options: ['Masculin', 'Féminin'] },
+                                        { label: 'Nationalité', key: 'nationalite' },
+                                        { label: 'Né le', key: 'dateNaissance', type: 'date' },
+                                        { label: 'À', key: 'lieuNaissance' },
+                                        { label: 'Document', key: 'documentIdentite' },
+                                        { label: 'Adresse', key: 'adresse' },
                                     ].map((item, idx) => (
                                         <div key={idx} className="d-flex align-items-center py-2 border-bottom-dashed">
                                             <span className="text-muted small fw-bold text-uppercase w-40">{item.label}</span>
-                                            <span className="fw-semibold text-dark">{item.value || 'Non renseigné'}</span>
+                                            {isEditing ? (
+                                                item.type === 'select' ? (
+                                                    <select {...register(item.key)} className="form-select form-select-sm border-0 bg-light rounded-pill">
+                                                        {item.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                    </select>
+                                                ) : (
+                                                    <input type={item.type || 'text'} {...register(item.key)} className="form-control form-control-sm border-0 bg-light rounded-pill" />
+                                                )
+                                            ) : (
+                                                <span className="fw-semibold text-dark">
+                                                    {item.key === 'dateNaissance' ? (op[item.key] ? new Date(op[item.key]).toLocaleDateString('fr-FR') : 'N/A') : (op[item.key] || 'Non renseigné')}
+                                                </span>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -204,30 +294,43 @@ export default function OperateurDetail() {
 
                             <div className="mb-5">
                                 <h5 className="fw-bold mb-4 d-flex align-items-center">
-                                    <div className="bg-success rounded-3 me-3 p-2 text-white" style={{ background: '#10b981' }}>
+                                    <span className="bg-success rounded-3 me-3 p-2 text-white d-flex align-items-center justify-content-center" style={{ background: '#10b981' }}>
                                         <Smartphone size={18} />
-                                    </div>
+                                    </span>
                                     CONTACT & SERVICES
                                 </h5>
                                 <div className="p-4 bg-light rounded-4 mb-4">
                                     <div className="d-flex align-items-center mb-3">
                                         <Phone size={16} className="text-primary me-3" />
-                                        <span className="fw-bold fs-5">{op.telephone}</span>
+                                        {isEditing ? (
+                                            <input {...register("telephone")} className="form-control form-control-sm border-0 bg-white rounded-pill" />
+                                        ) : (
+                                            <span className="fw-bold fs-5">{op.telephone}</span>
+                                        )}
                                     </div>
-                                    {op.email && (
-                                        <div className="d-flex align-items-center mb-0">
-                                            <Mail size={16} className="text-primary me-3" />
-                                            <span>{op.email}</span>
-                                        </div>
-                                    )}
+                                    <div className="d-flex align-items-center mb-0">
+                                        <Mail size={16} className="text-primary me-3" />
+                                        {isEditing ? (
+                                            <input {...register("email")} className="form-control form-control-sm border-0 bg-white rounded-pill" placeholder="Email (optionnel)" />
+                                        ) : (
+                                            <span>{op.email || 'N/A'}</span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="d-flex flex-wrap gap-2">
                                     {["airtelMoney", "mPesa", "orangeMoney", "afrimoney", "venteTelecom", "monnaieInternationale"].map(act => (
-                                        op[act] && (
-                                            <span key={act} className="badge rounded-pill bg-white border px-3 py-2 text-dark shadow-sm d-flex align-items-center gap-2">
-                                                <CheckCircle size={14} className="text-success" />
-                                                {act.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).replace('internationale', 'étrangère')}
-                                            </span>
+                                        isEditing ? (
+                                            <div key={act} className="form-check form-check-inline bg-light rounded-pill px-3 py-1 m-0 border border-secondary border-opacity-10">
+                                                <input type="checkbox" {...register(act)} className="form-check-input" id={`edit-op-${act}`} />
+                                                <label className="form-check-label small" htmlFor={`edit-op-${act}`}>{act.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</label>
+                                            </div>
+                                        ) : (
+                                            op[act] && (
+                                                <span key={act} className="badge rounded-pill bg-white border px-3 py-2 text-dark shadow-sm d-flex align-items-center gap-2">
+                                                    <CheckCircle size={14} className="text-success" />
+                                                    {act.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).replace('internationale', 'étrangère')}
+                                                </span>
+                                            )
                                         )
                                     ))}
                                 </div>
@@ -237,26 +340,34 @@ export default function OperateurDetail() {
                         <div className="col-lg-6">
                             <div className="mb-5 p-4 rounded-4 border border-2 border-dashed border-light h-100">
                                 <h5 className="fw-bold mb-4 d-flex align-items-center">
-                                    <div className="bg-dark rounded-3 me-3 p-2 text-white">
+                                    <span className="bg-dark rounded-3 me-3 p-2 text-white d-flex align-items-center justify-content-center">
                                         <Shield size={18} />
-                                    </div>
+                                    </span>
                                     ÉTABLISSEMENT & AUTORITÉ
                                 </h5>
                                 <div className="space-y-4">
                                     <div className="mb-4">
                                         <p className="text-muted small fw-bold text-uppercase mb-1">Nom Commercial</p>
-                                        <p className="fw-bold fs-5 text-primary mb-0">{op.nomEtablissement || 'NON DÉFINI'}</p>
+                                        {isEditing ? (
+                                            <input {...register("nomEtablissement")} className="form-control border-0 bg-light rounded-pill" placeholder="Nom commercial..." />
+                                        ) : (
+                                            <p className="fw-bold fs-5 text-primary mb-0">{op.nomEtablissement || 'NON DÉFINI'}</p>
+                                        )}
                                     </div>
                                     <div className="mb-4">
                                         <p className="text-muted small fw-bold text-uppercase mb-1">N° Agent / Master</p>
-                                        <p className="fw-semibold fs-5 mb-0">{op.numAgent || 'N/A'}</p>
+                                        {isEditing ? (
+                                            <input {...register("numAgent")} className="form-control form-control-sm border-0 bg-light rounded-pill" />
+                                        ) : (
+                                            <p className="fw-semibold fs-5 mb-0">{op.numAgent || 'N/A'}</p>
+                                        )}
                                     </div>
 
                                     <div className="mt-5 pt-4 border-top">
                                         <h5 className="fw-bold mb-4 d-flex align-items-center text-secondary">
-                                            <div className="bg-secondary rounded-3 me-3 p-2 text-white opacity-50">
+                                            <span className="bg-secondary rounded-3 me-3 p-2 text-white opacity-50 d-flex align-items-center justify-content-center">
                                                 <CheckCircle size={18} />
-                                            </div>
+                                            </span>
                                             VALIDATION AREFA
                                         </h5>
                                         <div className="space-y-3">
@@ -295,6 +406,6 @@ export default function OperateurDetail() {
                 .w-40 { width: 40%; }
                 .hover-lift:hover { transform: translateY(-3px); transition: all 0.3s ease; }
             `}} />
-        </div>
+        </form>
     );
 }

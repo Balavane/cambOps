@@ -95,6 +95,59 @@ app.get('/api/fiches/:id', async (req, res) => {
     res.json(fiche);
 });
 
+app.delete('/api/fiches/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const fiche = await prisma.ficheCambiste.delete({
+            where: { id }
+        });
+
+        // Suppression optionnelle de la photo
+        if (fiche.photoIDPath) {
+            const fullPath = path.join(uploadDir, fiche.photoIDPath);
+            if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+        }
+
+        res.json({ message: "Fiche supprimée avec succès" });
+    } catch (error) {
+        console.error("Erreur suppression fiche:", error);
+        res.status(500).json({ message: "Erreur lors de la suppression de la fiche" });
+    }
+});
+
+app.put('/api/fiches/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const data = req.body;
+
+        // Préparation des données comme dans le POST (conversion dates/booléens)
+        // Note: req.body vient du JSON ici, donc les booléens peuvent être déjà booléens ou strings 'on'/'off'
+        // On gère les deux cas pour la robustesse
+        const updateData = {
+            ...data,
+            dateNaissance: data.dateNaissance ? new Date(data.dateNaissance) : undefined,
+            dateEngagement: data.dateEngagement ? new Date(data.dateEngagement) : undefined,
+            dateAutorite: data.dateAutorite ? new Date(data.dateAutorite) : undefined,
+            // Ne pas mettre à jour photoIDPath ici sauf si vous gérez l'upload en update séparément
+        };
+
+        // Supprimer les champs système ou immuables si présents dans le body
+        delete updateData.id;
+        delete updateData.dateEnregistrement;
+        delete updateData._id; // Au cas où
+
+        const ficheMaj = await prisma.ficheCambiste.update({
+            where: { id },
+            data: updateData
+        });
+
+        res.json(ficheMaj);
+    } catch (error) {
+        console.error("Erreur modification fiche:", error);
+        res.status(500).json({ message: "Erreur lors de la modification de la fiche" });
+    }
+});
+
 // ==========================================
 // ROUTES : OPÉRATEURS (CORRIGÉES)
 // ==========================================
@@ -174,6 +227,51 @@ app.get('/api/operateurs/:id', async (req, res) => {
         res.json(op);
     } catch (error) {
         res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
+app.delete('/api/operateurs/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const op = await prisma.ficheOperateur.delete({
+            where: { id }
+        });
+
+        if (op.photoPath) {
+            const fullPath = path.join(uploadDir, op.photoPath);
+            if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+        }
+
+        res.json({ message: "Opérateur supprimé" });
+    } catch (error) {
+        res.status(500).json({ message: "Erreur serveur delete" });
+    }
+});
+
+app.put('/api/operateurs/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const data = req.body;
+
+        const updateData = {
+            ...data,
+            dateNaissance: data.dateNaissance ? new Date(data.dateNaissance) : undefined,
+            dateAutorite: data.dateAutorite ? new Date(data.dateAutorite) : undefined,
+            dateEnregistrement: undefined, // Protect
+            id: undefined, // Protect
+        };
+        // Clean undefined
+        Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+
+        const op = await prisma.ficheOperateur.update({
+            where: { id },
+            data: updateData
+        });
+        res.json(op);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Erreur update" });
     }
 });
 
